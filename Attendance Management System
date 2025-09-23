@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Attendance Management System</title>
+  <style>
+  /* Body & General Styles */
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: linear-gradient(to right, #6a11cb, #2575fc);
+    min-height: 100vh;
+    color: #333;
+  }
+
+  h1, h2 {
+    text-align: center;
+    color: #101010;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: auto;
+    background: #f9f9f9;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0px 10px 25px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+  }
+
+  .container:hover {
+    transform: translateY(-5px);
+  }
+
+  /* Inputs, Selects & Buttons */
+  input, select {
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    width: 200px;
+    transition: all 0.3s ease;
+  }
+
+  input:focus, select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0,123,255,0.5);
+    outline: none;
+  }
+
+  button {
+    background: linear-gradient(45deg, #6a11cb, #2575fc);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 5px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
+  }
+
+  button:hover {
+    transform: scale(1.1);
+    box-shadow: 0px 8px 20px rgba(0,0,0,0.3);
+  }
+
+  .delete-btn {
+    background: linear-gradient(45deg, #dc3545, #ff4e50);
+    font-size: 14px;
+  }
+
+  .delete-btn:hover {
+    background: linear-gradient(45deg, #a71d2a, #ff2a2a);
+  }
+
+  /* Table Styling */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0px 5px 15px rgba(0,0,0,0.1);
+  }
+
+  th, td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    transition: background 0.3s ease;
+  }
+
+  th {
+    background: #2575fc;
+    color: white;
+  }
+
+  tr:hover td {
+    background: #f1f1f1;
+  }
+
+  /* Attendance Status Colors */
+  .present {
+    color: green;
+    font-weight: bold;
+  }
+
+  .absent {
+    color: red;
+    font-weight: bold;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    input, select {
+      width: 100%;
+    }
+
+    table {
+      font-size: 14px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1 style="color: red;">Advanced Attendance Management System</h1>
+
+    <!-- Add Student Section -->
+    <h2 style="text-align: left;">Add Student</h2>
+    <input type="text" id="studentName" placeholder="Enter student name">
+    <input type="text" id="rollNumber" placeholder="Enter roll number">
+    <button onclick="addStudent()">Add Student</button>
+
+    <!-- Delete Student Section -->
+    <h2 style="text-align: left;">Delete Student</h2>
+    <select id="deleteStudentSelect"></select>
+    <button class="delete-btn" onclick="deleteStudent()">Delete Selected Student</button>
+
+    <!-- Attendance Section -->
+    <h2>Mark Attendance</h2>
+    <label>Select Date:</label>
+    <input type="date" id="attendanceDate">
+
+    <table id="attendanceTable">
+      <thead>
+        <tr>
+          <th>Roll No</th>
+          <th>Student Name</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button onclick="saveAttendance()">Save Attendance</button>
+
+    <h2>Manage Records</h2>
+<button class="delete-btn" onclick="clearAllRecords()">Clear All Attendance Records</button>
+
+
+    <!-- Attendance Records Section -->
+    <h2>Attendance Records</h2>
+    <div id="records"></div>
+  </div>
+
+  <script>
+    let students = JSON.parse(localStorage.getItem("students")) || [];
+    let attendanceRecords = JSON.parse(localStorage.getItem("attendanceRecords")) || {};
+
+    function renderStudents() {
+      let tbody = document.querySelector("#attendanceTable tbody");
+      tbody.innerHTML = "";
+      let deleteSelect = document.getElementById("deleteStudentSelect");
+      deleteSelect.innerHTML = "";
+
+      students.forEach(student => {
+        // Fill attendance table
+        let row = `
+          <tr>
+            <td>${student.roll}</td>
+            <td>${student.name}</td>
+            <td>
+              <select id="status-${student.roll}">
+                <option value="Present">Present</option>
+                <option value="Absent">Absent</option>
+              </select>
+            </td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
+
+        // Fill delete dropdown
+        let option = document.createElement("option");
+        option.value = student.roll;
+        option.textContent = `${student.roll} - ${student.name}`;
+        deleteSelect.appendChild(option);
+      });
+    }
+
+    function addStudent() {
+      let name = document.getElementById("studentName").value.trim();
+      let roll = document.getElementById("rollNumber").value.trim();
+
+      if (name && roll && !students.some(s => s.roll === roll)) {
+        students.push({ name, roll });
+        localStorage.setItem("students", JSON.stringify(students));
+        renderStudents();
+        document.getElementById("studentName").value = "";
+        document.getElementById("rollNumber").value = "";
+      } else {
+        alert("Enter valid details and ensure roll number is unique!");
+      }
+    }
+
+    function deleteStudent() {
+      let rollToDelete = document.getElementById("deleteStudentSelect").value;
+      if (!rollToDelete) return alert("Select a student to delete!");
+
+      let student = students.find(s => s.roll === rollToDelete);
+      if (confirm(`Are you sure you want to delete ${student.name} (Roll: ${student.roll})?`)) {
+        students = students.filter(s => s.roll !== rollToDelete);
+
+        // Remove from attendance records
+        for (let date in attendanceRecords) {
+          delete attendanceRecords[date][rollToDelete];
+        }
+
+        localStorage.setItem("students", JSON.stringify(students));
+        localStorage.setItem("attendanceRecords", JSON.stringify(attendanceRecords));
+        renderStudents();
+        renderRecords();
+      }
+    }
+
+    function saveAttendance() {
+      let date = document.getElementById("attendanceDate").value;
+      if (!date) {
+        alert("Please select a date!");
+        return;
+      }
+      let record = {};
+      students.forEach(student => {
+        let status = document.getElementById(`status-${student.roll}`).value;
+        record[student.roll] = { name: student.name, status };
+      });
+      attendanceRecords[date] = record;
+      localStorage.setItem("attendanceRecords", JSON.stringify(attendanceRecords));
+      renderRecords();
+      alert("Attendance saved successfully!");
+    }
+
+    function clearAllRecords() {
+  if (confirm("Are you sure you want to delete ALL attendance records?")) {
+    attendanceRecords = {};
+    localStorage.setItem("attendanceRecords", JSON.stringify(attendanceRecords));
+    renderRecords();
+    alert("All attendance records have been removed!");
+  }
+}
+
+    function renderRecords() {
+      let recordsDiv = document.getElementById("records");
+      recordsDiv.innerHTML = "";
+      for (let date in attendanceRecords) {
+        let table = `<h3>Date: ${date}</h3><table><tr><th>Roll No</th><th>Name</th><th>Status</th></tr>`;
+        for (let roll in attendanceRecords[date]) {
+          let { name, status } = attendanceRecords[date][roll];
+          let cssClass = status === "Present" ? "present" : "absent";
+          table += `<tr><td>${roll}</td><td>${name}</td><td class="${cssClass}">${status}</td></tr>`;
+        }
+        table += "</table>";
+        recordsDiv.innerHTML += table;
+      }
+    }
+
+    // Initial load
+    renderStudents();
+    renderRecords();
+  </script>
+</body>
+</html>
